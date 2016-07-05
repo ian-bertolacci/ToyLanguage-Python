@@ -3,6 +3,11 @@ from ply import yacc, lex
 from AST.ToyStructure import *
 from util import *
 
+def get_parser():
+  lexer = lex.lex( debug = False, errorlog = yacc.NullLogger() )
+  parser = yacc.yacc( write_tables = False, debug = False, errorlog = yacc.NullLogger() )
+  return parser
+
 yacc.YaccProduction.__str__ = lambda self: "[" + (", ".join( str(self[i]) for i in xrange(len(self)) ) ) + "]"
 
 tokens = [
@@ -235,10 +240,10 @@ def p_return_stmt(p):
   p[0] = Return_Statement( value = p[2] )
 
 def p_let_decl(p):
-  '''let_decl : LET ID COLON type_decl SEMI
-              | LET ID COLON type_decl ASSIGN exp SEMI'''
-
-  p[0] = Let_Declaration_Node( id=p[2], type=p[4], init=(p[6] if len(p) == 8 else None ) )
+  '''let_decl : LET typed_id SEMI
+              | LET typed_id ASSIGN exp SEMI'''
+  # TODO Enforce conditional with grammar. Is this possible with PLY? Trivial with YACC
+  p[0] = Let_Declaration_Node( typed_id=p[2], init=(p[4] if len(p) == 5+1 else None ) )
 
 def p_type_decl(p):
   '''type_decl : ID
@@ -270,6 +275,19 @@ def p_type_list(p):
     p[3].prepend( p[1] )
     p[0] = p[3]
 
+def p_typed_id(p):
+  '''typed_id : ID COLON type_decl'''
+  p[0] = Typed_Id( id=p[1], id_type=p[3] )
+
+def p_typed_id_list(p):
+  '''typed_id_list : typed_id
+                   | typed_id COMMA typed_id_list'''
+  if len( p ) == 1+1:
+    p[0] = Typed_Id_List( [ p[1] ] )
+  else:
+    p[3].prepend( p[1] )
+    p[0] = p[3]
+
 def p_exp(p):
   '''exp : value
          | bin_op_exp
@@ -279,8 +297,12 @@ def p_exp(p):
   p[0] = p[1]
 
 def p_closure(p):
-  '''closure : closure_type_decl LCBRACE program RCBRACE'''
+  '''closure : closure_param_decl LCBRACE program RCBRACE'''
   p[0] = Closure_Node( closure_type=p[1], body=p[3] )
+
+def p_closure_param_decl(p):
+  '''closure_param_decl : LPAREN typed_id_list ARROW type_decl RPAREN'''
+  p[0] = Closure_Param( in_params = p[2], out_type = p[4] )
 
 def p_bin_op_exp(p):
   '''bin_op_exp : exp PLUS exp

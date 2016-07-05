@@ -287,6 +287,34 @@ class ParseTests(unittest.TestCase):
       ["((a,b,(c,d))->(e,))", Closure_Type(in_types=Type_List(types=[Type_List(types=[Identifier(symbol='a'), Identifier(symbol='b'), Type_List(types=[Identifier(symbol='c'), Identifier(symbol='d')])])]), out_type=Type_List(types=[Identifier(symbol='e')]))],
       ["((a,b,(c,d))->(e,f))", Closure_Type(in_types=Type_List(types=[Type_List(types=[Identifier(symbol='a'), Identifier(symbol='b'), Type_List(types=[Identifier(symbol='c'), Identifier(symbol='d')])])]), out_type=Type_List(types=[Identifier(symbol='e'), Identifier(symbol='f')]))],
       ["((a,b,(c,d))->(e,f,(g,h)))", Closure_Type(in_types=Type_List(types=[Type_List(types=[Identifier(symbol='a'), Identifier(symbol='b'), Type_List(types=[Identifier(symbol='c'), Identifier(symbol='d')])])]), out_type=Type_List(types=[Identifier(symbol='e'), Identifier(symbol='f'), Type_List(types=[Identifier(symbol='g'), Identifier(symbol='h')])]))],
+
+      ["(a->(c->b))", Closure_Type(in_types=Type_List(types=[Identifier(symbol='a')]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='c')]), out_type=Identifier(symbol='b')))],
+      ["(a->(c->(b->d)))", Closure_Type(in_types=Type_List(types=[Identifier(symbol='a')]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='c')]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='b')]), out_type=Identifier(symbol='d'))))],
+      ["(a,b->(c->d))", Closure_Type(in_types=Type_List(types=[Identifier(symbol='a'), Identifier(symbol='b')]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='c')]), out_type=Identifier(symbol='d')))],
+      ["(a,b->(c,d->e))", Closure_Type(in_types=Type_List(types=[Identifier(symbol='a'), Identifier(symbol='b')]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='c'), Identifier(symbol='d')]), out_type=Identifier(symbol='e')))],
+    ]
+
+    self.do_tests( start_production, tests )
+
+  def test_closure_param_decl_parse(self):
+    start_production="closure_param_decl"
+    tests = [
+      ["( a : type_a -> type_b )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_b'))],
+      ["( a : type_a, b : type_b -> type_c )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a')), Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_b'))]), out_type=Identifier(symbol='type_c'))],
+      ["( a : (type_a,) -> type_b )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a')]))]), out_type=Identifier(symbol='type_b'))],
+      ["( a : (type_a, type_b) -> type_c )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')]))]), out_type=Identifier(symbol='type_c'))],
+      ["( a : (type_a, type_b), c : (type_c, type_d) -> type_e )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')])), Typed_Id(id=Identifier(symbol='c'), id_type=Type_List(types=[Identifier(symbol='type_c'), Identifier(symbol='type_d')]))]), out_type=Identifier(symbol='type_e'))],
+      ["( a : type_a -> (type_b -> type_c))", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b')]), out_type=Identifier(symbol='type_c')))],
+      ["( a : type_a -> (type_b, type_c -> type_d))", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b'), Identifier(symbol='type_c')]), out_type=Identifier(symbol='type_d')))],
+    ]
+
+    self.do_tests( start_production, tests )
+
+  def test_closure_parse(self):
+    start_production="closure"
+    tests = [
+      ["( a : type_a -> type_a ){ return a; }", Closure_Node(closure_type=Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Return_Statement(value=Identifier(symbol='a'))])],
+      ["( a : type_a -> type_a ){ let b : type_a := -a; return b; }", Closure_Node(closure_type=Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_a')), init=Unary_Operator_Node(op=Operator_Token(op='-'), exp=Identifier(symbol='a'))), Return_Statement(value=Identifier(symbol='b'))])],
     ]
 
     self.do_tests( start_production, tests )
@@ -294,27 +322,16 @@ class ParseTests(unittest.TestCase):
   def test_let_stmt_parse(self):
     start_production="statement"
     tests = [
-      ["let x : a;", Let_Declaration_Node(id=Identifier(symbol='x'), type=Identifier(symbol='a'), init=None)],
-      ["let x : (a,);", Let_Declaration_Node(id=Identifier(symbol='x'), type=Type_List(types=[Identifier(symbol='a')]), init=None)],
-      ["let x : a;", Let_Declaration_Node(id=Identifier(symbol='x'), type=Identifier(symbol='a'), init=None)],
-      ["let x : a;", Let_Declaration_Node(id=Identifier(symbol='x'), type=Identifier(symbol='a'), init=None)],
+      ["let x : a;", Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='x'), id_type=Identifier(symbol='a')), init=None)],
+      ["let x : (a,);", Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='x'), id_type=Type_List(types=[Identifier(symbol='a')])), init=None)],
+      ["let x : a;", Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='x'), id_type=Identifier(symbol='a')), init=None)],
+      ["let x : a;", Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='x'), id_type=Identifier(symbol='a')), init=None)],
+
+      ["let x : int := 10;", Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='x'), id_type=Identifier(symbol='int')), init=Int_Literal(text='10', value=10))]
     ]
 
-    self.do_tests( start_production, tests, is_test=False, print_tree=False )
+    self.do_tests( start_production, tests )
 
 
 if __name__ == "__main__":
   pass
-
-
-'''
-["(a,b->c)", None],
-["(a,b->(c,))", None],
-["(a,b->(c,d))", None],
-["(a,b->(c,d,(e,f)))", None],
-
-["(a,b,c->d)", None],
-["(a,b,c->(d,))", None],
-["(a,b,c->(d,e))", None],
-["(a,b,c->(d,e,(f,g)))", None],
-'''
