@@ -222,13 +222,21 @@ def p_error(p):
   raise Exception( "Illegal token while parsing: {0}".format(p) )
 
 def p_program(p):
-  '''program : statement
-             | statement program'''
-  # TODO Enforce conditional with grammar. Is this possible with PLY? Trivial with YACC
-  if len(p) == 1+1:
-    p[0] = [ p[1] ]
-  else:
-    p[0] = [ p[1] ] + p[2]
+  '''program : statement_list'''
+  p[0] = p[1]
+
+def p_statement_list(p):
+  '''statement_list : statement_list_base
+                    | statement_list_recursive'''
+  p[0] = p[1]
+
+def p_statement_list_base(p):
+  '''statement_list_base : statement'''
+  p[0] = [ p[1] ]
+
+def p_statement_list_recursive(p):
+  '''statement_list_recursive : statement_list_base statement_list'''
+  p[0] = p[1] + p[2]
 
 def p_statement(p):
   '''statement : let_decl
@@ -240,10 +248,17 @@ def p_return_stmt(p):
   p[0] = Return_Statement( value = p[2] )
 
 def p_let_decl(p):
-  '''let_decl : LET typed_id SEMI
-              | LET typed_id ASSIGN exp SEMI'''
-  # TODO Enforce conditional with grammar. Is this possible with PLY? Trivial with YACC
-  p[0] = Let_Declaration_Node( typed_id=p[2], init=(p[4] if len(p) == 5+1 else None ) )
+  '''let_decl : let_decl_no_assign
+              | let_decl_assign'''
+  p[0] = p[1]
+
+def p_let_decl_no_assign(p):
+  '''let_decl_no_assign : LET typed_id SEMI'''
+  p[0] = Let_Declaration_Node( typed_id=p[2], init=None )
+
+def p_let_decl_assign(p):
+  '''let_decl_assign : LET typed_id ASSIGN exp SEMI'''
+  p[0] = Let_Declaration_Node( typed_id=p[2], init=p[4] )
 
 def p_type_decl(p):
   '''type_decl : ID
@@ -256,37 +271,50 @@ def p_closure_type_decl(p):
   p[0] = Closure_Type( in_types=p[2], out_type=p[4] )
 
 def p_wrapped_type_list(p):
-  '''wrapped_type_list : LPAREN type_decl COMMA RPAREN
-                       | LPAREN type_decl COMMA type_list RPAREN '''
-  # TODO Enforce conditional with grammar. Is this possible with PLY? Trivial with YACC
-  if len(p) == 4+1:
-    p[0] = Type_List( [ p[2] ] )
-  else:
-    p[4].prepend( p[2] )
-    p[0] = p[4]
+  '''wrapped_type_list : wrapped_type_list_base
+                       | wrapped_type_list_tail'''
+  p[0] = p[1]
+
+def p_wrapped_type_list_base(p):
+  '''wrapped_type_list_base : LPAREN type_decl COMMA RPAREN'''
+  p[0] = Type_List( [ p[2] ] )
+
+def p_wrapped_type_list_tail(p):
+  '''wrapped_type_list_tail : LPAREN type_decl COMMA type_list RPAREN'''
+  p[4].prepend( p[2] )
+  p[0] = p[4]
 
 def p_type_list(p):
-  '''type_list : type_decl
-               | type_decl COMMA type_list'''
-  # TODO Enforce conditional with grammar. Is this possible with PLY? Trivial with YACC
-  if len(p) == 1+1:
-    p[0] = Type_List( [ p[1] ] )
-  else:
-    p[3].prepend( p[1] )
-    p[0] = p[3]
+  '''type_list : type_list_base
+               | type_list_recursive'''
+  p[0] = p[1]
+
+def p_type_list_base(p):
+  '''type_list_base : type_decl'''
+  p[0] = Type_List( [ p[1] ] )
+
+def p_type_list_recursive(p):
+  '''type_list_recursive : type_decl COMMA type_list'''
+  p[3].prepend( p[1] )
+  p[0] = p[3]
 
 def p_typed_id(p):
   '''typed_id : ID COLON type_decl'''
   p[0] = Typed_Id( id=p[1], id_type=p[3] )
 
 def p_typed_id_list(p):
-  '''typed_id_list : typed_id
-                   | typed_id COMMA typed_id_list'''
-  if len( p ) == 1+1:
-    p[0] = Typed_Id_List( [ p[1] ] )
-  else:
-    p[3].prepend( p[1] )
-    p[0] = p[3]
+  '''typed_id_list : typed_id_list_base
+                   | typed_id_list_recursive'''
+  p[0] = p[1]
+
+def p_typed_id_list_base(p):
+  '''typed_id_list_base : typed_id'''
+  p[0] = Typed_Id_List( [ p[1] ] )
+
+def p_typed_id_list_recursive(p):
+  '''typed_id_list_recursive : typed_id COMMA typed_id_list'''
+  p[3].prepend( p[1] )
+  p[0] = p[3]
 
 def p_exp(p):
   '''exp : value
@@ -297,7 +325,7 @@ def p_exp(p):
   p[0] = p[1]
 
 def p_closure(p):
-  '''closure : closure_param_decl LCBRACE program RCBRACE'''
+  '''closure : closure_param_decl LCBRACE statement_list RCBRACE'''
   p[0] = Closure_Node( closure_type=p[1], body=p[3] )
 
 def p_closure_param_decl(p):
