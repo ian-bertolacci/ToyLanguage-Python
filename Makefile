@@ -1,7 +1,11 @@
-.PHONY: neat test
+.PHONY: neat test clean
+
+clean: neat
 
 neat:
 	rm $(shell find . -regex '.*\.pyc')
+	rm $(shell find . -name parsetab.py )
+	rm $(shell find . -name parser.out )
 
 test:
 	python ./test.py

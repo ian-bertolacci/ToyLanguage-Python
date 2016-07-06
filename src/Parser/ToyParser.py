@@ -3,9 +3,17 @@ from ply import yacc, lex
 from AST.ToyStructure import *
 from util import *
 
-def get_parser():
-  lexer = lex.lex( debug = False, errorlog = yacc.NullLogger() )
-  parser = yacc.yacc( write_tables = False, debug = False, errorlog = yacc.NullLogger() )
+def get_parser( debug_mode = False):
+  lexer = None
+  parser = None
+
+  if debug_mode:
+    lexer = lex.lex( debug = True )
+    parser = yacc.yacc( write_tables = True, debug = True )
+  else:
+    lexer = lex.lex( debug = False, errorlog = yacc.NullLogger() )
+    parser = yacc.yacc( write_tables = False, debug = False, errorlog = yacc.NullLogger() )
+
   return parser
 
 yacc.YaccProduction.__str__ = lambda self: "[" + (", ".join( str(self[i]) for i in xrange(len(self)) ) ) + "]"
@@ -240,8 +248,13 @@ def p_statement_list_recursive(p):
 
 def p_statement(p):
   '''statement : let_decl
-               | return_stmt'''
+               | return_stmt
+               | statement_block'''
   p[0] = p[1]
+
+def p_statment_block(p):
+  '''statement_block : LCBRACE statement_list RCBRACE'''
+  p[0] = p[2]
 
 def p_return_stmt(p):
   '''return_stmt : RETURN exp SEMI'''
@@ -325,8 +338,8 @@ def p_exp(p):
   p[0] = p[1]
 
 def p_closure(p):
-  '''closure : closure_param_decl LCBRACE statement_list RCBRACE'''
-  p[0] = Closure_Node( closure_type=p[1], body=p[3] )
+  '''closure : closure_param_decl statement_block'''
+  p[0] = Closure_Node( closure_type=p[1], body=p[2] )
 
 def p_closure_param_decl(p):
   '''closure_param_decl : LPAREN typed_id_list ARROW type_decl RPAREN'''

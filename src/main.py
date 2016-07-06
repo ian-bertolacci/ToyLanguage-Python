@@ -5,12 +5,12 @@ from util import *
 import argparse
 
 argparser = argparse.ArgumentParser(description='ToyLanguage interpreter')
-argparser.add_argument('files', metavar='file', type=str, nargs='+',
-                    help='source files')
+argparser.add_argument('files', metavar='file', type=str, nargs='+', help='source files')
+argparser.add_argument('--debug', action='store_true', default=False, help='put parser in debug mode')
 
 def main():
   args = argparser.parse_args()
-  parser = get_parser()
+  parser = get_parser( args.debug )
 
   for src_file in args.files:
     with open(src_file, 'r') as open_file:
