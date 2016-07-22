@@ -299,13 +299,13 @@ class ParseTests(unittest.TestCase):
   def test_closure_param_decl_parse(self):
     start_production="closure_param_decl"
     tests = [
-      ["( a : type_a -> type_b )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_b'))],
-      ["( a : type_a, b : type_b -> type_c )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a')), Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_b'))]), out_type=Identifier(symbol='type_c'))],
-      ["( a : (type_a,) -> type_b )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a')]))]), out_type=Identifier(symbol='type_b'))],
-      ["( a : (type_a, type_b) -> type_c )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')]))]), out_type=Identifier(symbol='type_c'))],
-      ["( a : (type_a, type_b), c : (type_c, type_d) -> type_e )", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')])), Typed_Id(id=Identifier(symbol='c'), id_type=Type_List(types=[Identifier(symbol='type_c'), Identifier(symbol='type_d')]))]), out_type=Identifier(symbol='type_e'))],
-      ["( a : type_a -> (type_b -> type_c))", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b')]), out_type=Identifier(symbol='type_c')))],
-      ["( a : type_a -> (type_b, type_c -> type_d))", Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b'), Identifier(symbol='type_c')]), out_type=Identifier(symbol='type_d')))],
+      ["( a : type_a -> type_b )", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_b'))],
+      ["( a : type_a, b : type_b -> type_c )", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a')), Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_b'))]), out_type=Identifier(symbol='type_c'))],
+      ["( a : (type_a,) -> type_b )", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a')]))]), out_type=Identifier(symbol='type_b'))],
+      ["( a : (type_a, type_b) -> type_c )", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')]))]), out_type=Identifier(symbol='type_c'))],
+      ["( a : (type_a, type_b), c : (type_c, type_d) -> type_e )", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Type_List(types=[Identifier(symbol='type_a'), Identifier(symbol='type_b')])), Typed_Id(id=Identifier(symbol='c'), id_type=Type_List(types=[Identifier(symbol='type_c'), Identifier(symbol='type_d')]))]), out_type=Identifier(symbol='type_e'))],
+      ["( a : type_a -> (type_b -> type_c))", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b')]), out_type=Identifier(symbol='type_c')))],
+      ["( a : type_a -> (type_b, type_c -> type_d))", Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Closure_Type(in_types=Type_List(types=[Identifier(symbol='type_b'), Identifier(symbol='type_c')]), out_type=Identifier(symbol='type_d')))],
     ]
 
     self.do_tests( start_production, tests )
@@ -313,8 +313,8 @@ class ParseTests(unittest.TestCase):
   def test_closure_parse(self):
     start_production="closure"
     tests = [
-      ["( a : type_a -> type_a ){ return a; }", Closure_Node(closure_type=Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Return_Statement(value=Identifier(symbol='a'))])],
-      ["( a : type_a -> type_a ){ let b : type_a := -a; return b; }", Closure_Node(closure_type=Closure_Param(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_a')), init=Unary_Operator_Node(op=Operator_Token(op='-'), exp=Identifier(symbol='a'))), Return_Statement(value=Identifier(symbol='b'))])],
+      ["( a : type_a -> type_a ){ return a; }", Closure_Node(closure_type=Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Return_Statement(value=Identifier(symbol='a'))])],
+      ["( a : type_a -> type_a ){ let b : type_a := -a; return b; }", Closure_Node(closure_type=Closure_Param_Decl(in_params=Typed_Id_List(typed_ids=[Typed_Id(id=Identifier(symbol='a'), id_type=Identifier(symbol='type_a'))]), out_type=Identifier(symbol='type_a')), body=[Let_Declaration_Node(typed_id=Typed_Id(id=Identifier(symbol='b'), id_type=Identifier(symbol='type_a')), init=Unary_Operator_Node(op=Operator_Token(op='-'), exp=Identifier(symbol='a'))), Return_Statement(value=Identifier(symbol='b'))])],
     ]
 
     self.do_tests( start_production, tests )

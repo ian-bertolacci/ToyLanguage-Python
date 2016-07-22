@@ -36,9 +36,6 @@ This is why t_TRUE and t_FALSE come before t_ID.
 Otherwise It would tokenize both as IDs
 '''
 
-def t_error(t):
-  raise Exception( "Illegal character while tokenizing: {0}".format( t.value[0]) )
-
 def t_REAL(t):
   r'-?\d*\.\d+'
   t.value = Real_Literal( t.value, float(t.value) )
@@ -221,7 +218,7 @@ precedence = [
     ('right','EXP'),
     ('left','EQ','NEQ','LT','LTEQ','GT','GTEQ'),
     ('left','AND','OR'),
-    ('right','UMINUS','NOT')
+    ('right','UMINUS','NOT'),
     ]
 
 start = 'program'
@@ -330,12 +327,56 @@ def p_typed_id_list_recursive(p):
   p[0] = p[3]
 
 def p_exp(p):
-  '''exp : value
-         | bin_op_exp
+  '''exp : bin_op_exp
          | un_op_exp
-         | paren_exp
-         | closure'''
+         | closed_exp'''
   p[0] = p[1]
+
+def p_closed_exp(p):
+  '''closed_exp : value
+                | paren_exp
+                | closure
+                | closure_eval_exp'''
+  p[0] = p[1]
+
+def p_closure_eval_exp(p):
+  '''closure_eval_exp : closed_exp parameter_eval_list'''
+  p[0] = Closure_Eval( closure_exp=p[1], parameters=p[2] )
+
+def p_parameter_eval_list(p):
+  '''parameter_eval_list : parameter_eval_list_empty
+                         | parameter_eval_list_non_empty'''
+  p[0] = p[1]
+
+def p_parameter_eval_list_empty(p):
+  '''parameter_eval_list_empty : LPAREN RPAREN'''
+  p[0] = []
+
+def p_parameter_eval_list_non_empty(p):
+  '''parameter_eval_list_non_empty : LPAREN parameter_eval_list_unwrapped RPAREN'''
+  p[0] = p[2]
+
+def p_parameter_eval_list_unwrapped(p):
+  '''parameter_eval_list_unwrapped : parameter_eval_list_unwrapped_base
+                                   | parameter_eval_list_unwrapped_recursive'''
+  p[0] = p[1]
+
+def p_parameter_eval_list_unwrapped_base(p):
+  '''parameter_eval_list_unwrapped_base : parameter_eval_list_unwrapped_base_unnamed
+                                        | parameter_eval_list_unwrapped_base_named'''
+  p[0] = [ p[1] ]
+
+def p_parameter_eval_list_unwrapped_base_unnamed(p):
+  '''parameter_eval_list_unwrapped_base_unnamed : exp'''
+  p[0] = Unnamed_Param( value = p[1] )
+
+def p_parameter_eval_list_unwrapped_base_named(p):
+  '''parameter_eval_list_unwrapped_base_named : ID ASSIGN exp'''
+  p[0] = Named_Param( id = p[1], value = p[3] )
+
+def p_parameter_eval_list_unwrapped_recursive(p):
+  '''parameter_eval_list_unwrapped_recursive : parameter_eval_list_unwrapped_base COMMA parameter_eval_list_unwrapped'''
+  p[0] = p[1] + p[3]
 
 def p_closure(p):
   '''closure : closure_param_decl statement_block'''
@@ -343,7 +384,7 @@ def p_closure(p):
 
 def p_closure_param_decl(p):
   '''closure_param_decl : LPAREN typed_id_list ARROW type_decl RPAREN'''
-  p[0] = Closure_Param( in_params = p[2], out_type = p[4] )
+  p[0] = Closure_Param_Decl( in_params = p[2], out_type = p[4] )
 
 def p_bin_op_exp(p):
   '''bin_op_exp : exp PLUS exp

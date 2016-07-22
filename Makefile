@@ -1,4 +1,6 @@
-.PHONY: neat test clean
+.PHONY: neat test clean all
+
+all:
 
 clean: neat
 

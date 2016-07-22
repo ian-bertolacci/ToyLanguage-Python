@@ -4,8 +4,7 @@ import unittest, tests, yaml, argparse, subprocess, importlib, sys, os, inspect
 
 # Greate our CL argument parser
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('explicit_test_names', metavar='test-name', type=str, nargs='*',
-                    help='Names of tests to run.')
+parser.add_argument('explicit_test_names', metavar='test-name', type=str, nargs='*', help='Names of tests to run.')
 args = parser.parse_args()
 
 # Parse test registry
