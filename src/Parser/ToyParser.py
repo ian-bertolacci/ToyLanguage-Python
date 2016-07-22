@@ -18,6 +18,11 @@ def get_parser( debug_mode = False):
 
 yacc.YaccProduction.__str__ = lambda self: "[" + (", ".join( str(self[i]) for i in xrange(len(self)) ) ) + "]"
 
+# Lexer states
+states = [
+  ('comment','exclusive'),
+]
+
 tokens = [
           'PLUS','MINUS','EXP','TIMES','DIVIDE','MOD',
           'EQ','NEQ','LT','LTEQ','GT','GTEQ',
@@ -35,6 +40,32 @@ Order denotes the attempt precidence.
 This is why t_TRUE and t_FALSE come before t_ID.
 Otherwise It would tokenize both as IDs
 '''
+
+def t_error(t):
+  raise Exception( "Illegal character while tokenizing: {0}".format( t.value[0]) )
+
+def t_COMMENT(t):
+  r'/\*'
+  t.lexer.comment_start = t.lexer.lexpos
+  t.lexer.depth = 1
+  t.lexer.begin('comment')
+
+def t_comment_OCOMMENT(t):
+ r'/\*'
+ t.lexer.depth += 1
+
+def t_comment_CCOMMENT(t):
+  r'\*/'
+  t.lexer.depth -= 1
+  if t.lexer.depth < 1:
+    t.value = t.lexer.lexdata[t.lexer.comment_start:t.lexer.lexpos-2]
+    t.lexer.lineno += t.value.count('\n')
+    t.lexer.begin('INITIAL')
+
+def t_comment_error(t):
+  t.lexer.skip(1)
+
+t_comment_ignore = " \t\n"
 
 def t_REAL(t):
   r'-?\d*\.\d+'
@@ -402,7 +433,6 @@ def p_bin_op_exp(p):
                 | exp AND exp
                 | exp OR exp'''
   p[0] = Binary_Operator_Node( op=p[2], lhs=p[1], rhs=p[3] )
-  #debug_print( "Binary op exp:", p[0] )
 
 def p_paren(p):
   '''paren_exp : LPAREN exp RPAREN'''
@@ -412,7 +442,6 @@ def p_un_op_exp(p):
   '''un_op_exp : NOT exp
                | MINUS exp %prec UMINUS'''
   p[0] = Unary_Operator_Node( op=p[1], exp=p[2] )
-  #debug_print( "Unary op exp:", p[0])
 
 def p_value(p):
   '''value : INT
@@ -422,4 +451,3 @@ def p_value(p):
            | STRING
            | ID'''
   p[0] = p[1]
-  #debug_print( "Value:", p[0] )
