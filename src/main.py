@@ -16,6 +16,6 @@ def main():
     with open(src_file, 'r') as open_file:
       print( src_file )
       tree = parser.parse( open_file.read() )
-      print( "\n".join( map( repr, tree ) ) )
+      print( "\n\n".join( map( repr, tree ) ) )
 if __name__ == "__main__":
   main()
